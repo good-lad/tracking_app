@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Step 1: Try to detect the carrier
+    // Step 1: Detect carrier
     const detectRes = await fetch(`https://api.ship24.com/public/v1/carriers/detect`, {
       method: 'POST',
       headers: {
@@ -19,10 +19,10 @@ export default async function handler(req, res) {
     const detectData = await detectRes.json();
     const detectedCarrier = detectData?.data?.[0]?.code;
 
-    // Step 2: Use fallback if carrier not detected
+    // Use fallback if carrier not detected
     const carrier = detectedCarrier || 'parcelone';
 
-    // Step 3: Create tracker
+    // Step 2: Create tracker
     const response = await fetch(`https://api.ship24.com/public/v1/trackers`, {
       method: 'POST',
       headers: {
@@ -38,7 +38,12 @@ export default async function handler(req, res) {
     const result = await response.json();
 
     if (!response.ok || !result || result.error) {
-      return res.status(response.status || 500).json({ error: result.error || 'API Error' });
+      console.error('API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: result,
+      });
+      return res.status(response.status || 500).json({ error: result.error || 'API Error', details: result });
     }
 
     const tracking = result.data?.[0]?.tracker;
@@ -48,7 +53,7 @@ export default async function handler(req, res) {
 
     res.status(200).json(tracking);
   } catch (error) {
+    console.error('Unexpected Error:', error);
     res.status(500).json({ error: error.message || 'Unexpected error' });
   }
 }
-
