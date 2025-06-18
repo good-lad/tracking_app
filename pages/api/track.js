@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const detectData = await detectRes.json();
     const detectedCarrier = detectData?.data?.[0]?.code;
 
-    // Step 2: Fallback if detection fails
+    // Step 2: Use fallback if carrier not detected
     const carrier = detectedCarrier || 'parcelone';
 
     // Step 3: Create tracker
@@ -51,3 +51,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: error.message || 'Unexpected error' });
   }
 }
+
