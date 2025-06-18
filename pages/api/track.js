@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Step 1: Detect carrier
+    // Step 1: Try to detect the carrier
     const detectRes = await fetch(`https://api.ship24.com/public/v1/carriers/detect`, {
       method: 'POST',
       headers: {
@@ -17,13 +17,12 @@ export default async function handler(req, res) {
     });
 
     const detectData = await detectRes.json();
+    const detectedCarrier = detectData?.data?.[0]?.code;
 
-    const carrier = detectData?.data?.[0]?.code;
-    if (!carrier) {
-      return res.status(400).json({ error: 'Could not detect carrier' });
-    }
+    // Step 2: Fallback if detection fails
+    const carrier = detectedCarrier || 'parcelone';
 
-    // Step 2: Create tracker
+    // Step 3: Create tracker
     const response = await fetch(`https://api.ship24.com/public/v1/trackers`, {
       method: 'POST',
       headers: {
