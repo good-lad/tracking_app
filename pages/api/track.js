@@ -1,3 +1,4 @@
+// File: /pages/api/track.js
 export default async function handler(req, res) {
   const { number } = req.query;
 
@@ -6,42 +7,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Detect carrier using public API
-    const detectRes = await fetch(`https://api.ship24.com/public/v1/carriers/detect`, {
+    const response = await fetch(`https://api.ship24.com/api/v1/trackers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.SHIP24_API_KEY}`,
       },
-      body: JSON.stringify({ trackingNumber: number })
-    });
-
-    const detectData = await detectRes.json();
-    console.log('Carrier detection response:', detectData);
-
-    const carrier = detectData?.data?.[0]?.code;
-
-    if (!carrier) {
-      return res.status(400).json({ error: 'Could not detect carrier' });
-    }
-
-    // Create tracker using public API
-    const response = await fetch(`https://api.ship24.com/public/v1/trackers`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.SHIP24_API_KEY}`,
-      },
-      body: JSON.stringify({
-        trackingNumber: number,
-        carrier: carrier
-      })
+      body: JSON.stringify({ trackingNumber: number }),
     });
 
     const result = await response.json();
+    console.log('Create tracker response:', result);
 
-    if (!response.ok || !result || result.error) {
-      return res.status(response.status || 500).json({ error: result.error || 'API Error' });
+    if (!response.ok) {
+      return res.status(response.status).json({ error: result.message || 'API error' });
     }
 
     const tracking = result.data?.tracker ?? result.data?.[0]?.tracker;
