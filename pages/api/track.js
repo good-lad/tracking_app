@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   try {
     // Detect carrier
-    const detectRes = await fetch(`https://api.ship24.com/public/v1/carriers/detect`, {
+    const detectRes = await fetch(`https://api.ship24.com/api/v1/carriers/detect`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     }
 
     // Create tracker
-    const response = await fetch(`https://api.ship24.com/public/v1/trackers`, {
+    const response = await fetch(`https://api.ship24.com/api/v1/trackers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
