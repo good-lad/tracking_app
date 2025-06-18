@@ -17,6 +17,7 @@ export default async function handler(req, res) {
     });
 
     const detectData = await detectRes.json();
+    console.log('Carrier detection response:', detectData); // 👈 ADD THIS
     const carrier = detectData?.data?.[0]?.code;
 
     if (!carrier) {
