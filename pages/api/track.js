@@ -1,4 +1,3 @@
-// File: /pages/api/track.js
 export default async function handler(req, res) {
   const { number } = req.query;
 
@@ -13,14 +12,22 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.SHIP24_API_KEY}`,
       },
-      body: JSON.stringify({ trackingNumber: number }),
+      body: JSON.stringify({ trackingNumber: number })
     });
 
-    const result = await response.json();
-    console.log('Create tracker response:', result);
+    const text = await response.text(); // <-- for raw response debugging
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch {
+      console.error('Failed to parse response:', text);
+      return res.status(500).json({ error: 'Invalid JSON returned by Ship24 API' });
+    }
 
-    if (!response.ok) {
-      return res.status(response.status).json({ error: result.message || 'API error' });
+    console.log('API result:', result);
+
+    if (!response.ok || !result || result.error) {
+      return res.status(response.status || 500).json({ error: result.error || result.message || 'API Error' });
     }
 
     const tracking = result.data?.tracker ?? result.data?.[0]?.tracker;
@@ -31,7 +38,7 @@ export default async function handler(req, res) {
 
     res.status(200).json(tracking);
   } catch (error) {
-    console.error('API ERROR:', error);
+    console.error('API error:', error);
     res.status(500).json({ error: error.message || 'Unexpected error' });
   }
 }
