@@ -4,7 +4,7 @@ function guessCarrier(trackingNumber) {
   if (/^\d{10}$/.test(trackingNumber)) return 'dhl';
   if (/^R[A-Z]\d{9}AT$/.test(trackingNumber)) return 'postat';
   if (/^\d{13}$/.test(trackingNumber)) return 'parcelone';
-  return 'yanwen';
+  return 'yanwen'; // fallback
 }
 
 export default async function handler(req, res) {
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   try {
     const carrierCode = carrier || guessCarrier(number);
 
-    // Step 1: Create tracker (safe to call even if exists)
+    // Step 1: Create the tracker
     await fetch('https://api.trackingmore.com/v4/trackings', {
       method: 'POST',
       headers: {
@@ -30,17 +30,14 @@ export default async function handler(req, res) {
       }),
     });
 
-    // Step 2: Get tracker info (must use POST, not GET)
-    const getRes = await fetch('https://api.trackingmore.com/v4/trackings/get', {
-      method: 'POST',
+    // Step 2: Get the tracker info (GET with query params, no content-type!)
+    const url = `https://api.trackingmore.com/v4/trackings/get?tracking_number=${number}&carrier_code=${carrierCode}`;
+
+    const getRes = await fetch(url, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'Tracking-Api-Key': process.env.TRACKINGMORE_API_KEY,
       },
-      body: JSON.stringify({
-        tracking_number: number,
-        carrier_code: carrierCode,
-      }),
     });
 
     const result = await getRes.json();
@@ -64,4 +61,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: error.message || 'Unexpected error' });
   }
 }
+
 
