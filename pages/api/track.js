@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   try {
     const carrierCode = carrier || guessCarrier(number);
 
-    const createRes = await fetch('https://api.trackingmore.com/v4/trackings/post', {
+    const createRes = await fetch('https://api.trackingmore.com/v4/trackings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -44,4 +44,3 @@ export default async function handler(req, res) {
     res.status(500).json({ error: error.message || 'Unexpected error' });
   }
 }
-
