@@ -1,31 +1,22 @@
-// File: /pages/api/track.js
+function guessCarrier(trackingNumber) {
+  if (trackingNumber.startsWith('YT')) return 'yanwen';
+  if (/^1Z/.test(trackingNumber)) return 'ups';
+  if (/^\d{10}$/.test(trackingNumber)) return 'dhl';
+  if (/^R[A-Z]\d{9}AT$/.test(trackingNumber)) return 'postat';
+  if (/^\d{13}$/.test(trackingNumber)) return 'parcelone';
+  return 'yanwen'; // fallback if nothing matches
+}
 
 export default async function handler(req, res) {
-  const { number } = req.query;
+  const { number, carrier } = req.query;
 
   if (!number) {
     return res.status(400).json({ error: 'Tracking number is required' });
   }
 
   try {
-    // Step 1: Detect carrier
-    const detectRes = await fetch('https://api.trackingmore.com/v4/carriers/detect', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Tracking-Api-Key': process.env.TRACKINGMORE_API_KEY,
-      },
-      body: JSON.stringify({ tracking_number: number }),
-    });
+    const carrierCode = carrier || guessCarrier(number);
 
-    const detectData = await detectRes.json();
-    const carrierCode = detectData?.data?.[0]?.code;
-
-    if (!carrierCode) {
-      return res.status(400).json({ error: 'Could not detect carrier' });
-    }
-
-    // Step 2: Create tracking
     const createRes = await fetch('https://api.trackingmore.com/v4/trackings/post', {
       method: 'POST',
       headers: {
@@ -42,7 +33,9 @@ export default async function handler(req, res) {
     console.log('TrackingMore response:', result);
 
     if (!createRes.ok || result.meta?.code !== 200) {
-      return res.status(createRes.status || 500).json({ error: result.meta?.message || 'TrackingMore API Error' });
+      return res
+        .status(createRes.status || 500)
+        .json({ error: result.meta?.message || 'TrackingMore API Error' });
     }
 
     res.status(200).json(result.data);
@@ -51,3 +44,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: error.message || 'Unexpected error' });
   }
 }
+
