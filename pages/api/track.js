@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     });
 
     const result = await createRes.json();
-    console.log('TrackingMore response:', result);
+    console.log('✅ TrackingMore response data:', result);
 
     if (!createRes.ok || result.meta?.code !== 200) {
       return res
@@ -38,9 +38,16 @@ export default async function handler(req, res) {
         .json({ error: result.meta?.message || 'TrackingMore API Error' });
     }
 
-    res.status(200).json(result.data);
+    const tracking = result.data?.items?.[0] || {};
+
+    if (!tracking.tracking_number) {
+      return res.status(404).json({ error: 'No tracking data found' });
+    }
+
+    res.status(200).json(tracking);
   } catch (error) {
     console.error('API ERROR:', error);
     res.status(500).json({ error: error.message || 'Unexpected error' });
   }
 }
+
