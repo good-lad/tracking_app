@@ -4,7 +4,7 @@ function guessCarrier(trackingNumber) {
   if (/^\d{10}$/.test(trackingNumber)) return 'dhl';
   if (/^R[A-Z]\d{9}AT$/.test(trackingNumber)) return 'postat';
   if (/^\d{13}$/.test(trackingNumber)) return 'parcelone';
-  return 'yanwen'; // fallback if nothing matches
+  return 'yanwen';
 }
 
 export default async function handler(req, res) {
@@ -17,7 +17,8 @@ export default async function handler(req, res) {
   try {
     const carrierCode = carrier || guessCarrier(number);
 
-    const createRes = await fetch('https://api.trackingmore.com/v4/trackings', {
+    // Step 1: Create the tracker (if not already created)
+    await fetch('https://api.trackingmore.com/v4/trackings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -29,16 +30,28 @@ export default async function handler(req, res) {
       }),
     });
 
-    const result = await createRes.json();
-    console.log('✅ TrackingMore response data:', result);
+    // Step 2: Get the tracker data
+    const getRes = await fetch(
+      `https://api.trackingmore.com/v4/trackings/${carrierCode}/${number}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Tracking-Api-Key': process.env.TRACKINGMORE_API_KEY,
+        },
+      }
+    );
 
-    if (!createRes.ok || result.meta?.code !== 200) {
+    const result = await getRes.json();
+    console.log('📦 Final tracking result:', result);
+
+    if (!getRes.ok || result.meta?.code !== 200) {
       return res
-        .status(createRes.status || 500)
+        .status(getRes.status || 500)
         .json({ error: result.meta?.message || 'TrackingMore API Error' });
     }
 
-    const tracking = result.data?.items?.[0] || {};
+    const tracking = result.data || {};
 
     if (!tracking.tracking_number) {
       return res.status(404).json({ error: 'No tracking data found' });
