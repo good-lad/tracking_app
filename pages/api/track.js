@@ -1,3 +1,5 @@
+// File: /pages/api/track.js
+
 export default async function handler(req, res) {
   const { number } = req.query;
 
@@ -7,13 +9,13 @@ export default async function handler(req, res) {
 
   try {
     // Step 1: Detect carrier
-    const detectRes = await fetch(`https://api.trackingmore.com/v4/carriers/detect`, {
+    const detectRes = await fetch('https://api.trackingmore.com/v4/carriers/detect', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Tracking-Api-Key': process.env.TRACKINGMORE_API_KEY,
       },
-      body: JSON.stringify({ tracking_number: number })
+      body: JSON.stringify({ tracking_number: number }),
     });
 
     const detectData = await detectRes.json();
@@ -24,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     // Step 2: Create tracking
-    const createRes = await fetch(`https://api.trackingmore.com/v4/trackings/post`, {
+    const createRes = await fetch('https://api.trackingmore.com/v4/trackings/post', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,14 +34,14 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         tracking_number: number,
-        carrier_code: carrierCode
-      })
+        carrier_code: carrierCode,
+      }),
     });
 
     const result = await createRes.json();
     console.log('TrackingMore response:', result);
 
-    if (!createRes.ok || !result || result.meta?.code !== 200) {
+    if (!createRes.ok || result.meta?.code !== 200) {
       return res.status(createRes.status || 500).json({ error: result.meta?.message || 'TrackingMore API Error' });
     }
 
