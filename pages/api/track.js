@@ -1,42 +1,51 @@
-// track.js
+export default async function handler(req, res) {
+  const { number } = req.query;
 
-/**
- * Track a package by its tracking number.
- * Automatically relies on backend for carrier detection.
- * 
- * @param {string} trackingNumber - The parcel tracking number.
- * @returns {Promise<object|null>} - Tracking data or null if error.
- */
-async function trackPackage(trackingNumber) {
-  if (!trackingNumber) {
-    alert('Please enter a tracking number');
-    return null;
+  if (!number) {
+    return res.status(400).json({ error: 'Tracking number is required' });
   }
 
   try {
-    const response = await fetch(`/api/track?number=${encodeURIComponent(trackingNumber)}`);
+    // Step 1: Detect carrier
+    const detectRes = await fetch(`https://api.trackingmore.com/v4/carriers/detect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Tracking-Api-Key': process.env.TRACKINGMORE_API_KEY,
+      },
+      body: JSON.stringify({ tracking_number: number })
+    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      alert('Error: ' + (errorData.error || 'Failed to get tracking info'));
-      return null;
+    const detectData = await detectRes.json();
+    const carrierCode = detectData?.data?.[0]?.code;
+
+    if (!carrierCode) {
+      return res.status(400).json({ error: 'Could not detect carrier' });
     }
 
-    const trackingData = await response.json();
+    // Step 2: Create tracking
+    const createRes = await fetch(`https://api.trackingmore.com/v4/trackings/post`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Tracking-Api-Key': process.env.TRACKINGMORE_API_KEY,
+      },
+      body: JSON.stringify({
+        tracking_number: number,
+        carrier_code: carrierCode
+      })
+    });
 
-    console.log('Tracking data:', trackingData);
+    const result = await createRes.json();
+    console.log('TrackingMore response:', result);
 
-    // TODO: Replace this with your UI update logic
-    // e.g., renderTrackingInfo(trackingData);
+    if (!createRes.ok || !result || result.meta?.code !== 200) {
+      return res.status(createRes.status || 500).json({ error: result.meta?.message || 'TrackingMore API Error' });
+    }
 
-    return trackingData;
-
+    res.status(200).json(result.data);
   } catch (error) {
-    console.error('Fetch error:', error);
-    alert('Unexpected error occurred');
-    return null;
+    console.error('API ERROR:', error);
+    res.status(500).json({ error: error.message || 'Unexpected error' });
   }
 }
-
-// Example usage:
-// trackPackage('YT1234567890');
