@@ -43,21 +43,34 @@ export default async function handler(req, res) {
     }
 
     const tracking = data.data.trackings[0];
+
     const trackingNumber =
       (tracking.tracker && tracking.tracker.trackingNumber) ||
       (tracking.shipment && tracking.shipment.trackingNumbers && tracking.shipment.trackingNumbers[0]?.tn) ||
       'N/A';
 
-    const courierCodes = tracking.shipment?.courierCode;
-    const courier = Array.isArray(courierCodes) && courierCodes.length > 0
-      ? courierCodes.join(', ')
-      : 'N/A';
+    const courier =
+      (Array.isArray(tracking.shipment?.courierCode) && tracking.shipment.courierCode.length > 0
+        ? tracking.shipment.courierCode.join(', ')
+        : tracking.shipment?.courierName ||
+          tracking.shipment?.carrierName ||
+          'N/A');
 
-    const events = (tracking.events || []).map(event => ({
-      date: event.occurrenceDatetime || event.datetime || '',
-      status: event.status || event.statusMilestone || 'Status update',
-      location: event.location || 'Location not specified',
-    }));
+    const events = (tracking.events || []).map(event => {
+      let location = 'Location not specified';
+      if (event.location) {
+        if (typeof event.location === 'string') {
+          location = event.location;
+        } else if (typeof event.location === 'object') {
+          location = event.location.city || event.location.state || event.location.country || location;
+        }
+      }
+      return {
+        date: event.occurrenceDatetime || event.datetime || '',
+        status: event.status || event.statusMilestone || 'Status update',
+        location,
+      };
+    });
 
     return res.status(200).json({
       trackingNumber,
