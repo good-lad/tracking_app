@@ -47,15 +47,25 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'No tracking data found' });
     }
 
-    // Extract and format the relevant info
     const tracking = data.data.trackings[0];
-    const trackingNumber = tracking.tracker?.trackingNumber || 'N/A';
-    const courier = Array.isArray(tracking.shipment?.courierCode) && tracking.shipment.courierCode.length > 0
-      ? tracking.shipment.courierCode.join(', ')
+
+    // Extract tracking number safely
+    const trackingNumber =
+      tracking?.tracker?.trackingNumber ||
+      tracking?.shipment?.trackingNumbers?.[0]?.tn ||
+      'N/A';
+
+    // Extract courier code(s) safely
+    const courierCodes = tracking?.shipment?.courierCode;
+    const courier = Array.isArray(courierCodes) && courierCodes.length > 0
+      ? courierCodes.join(', ')
       : 'N/A';
+
+    // Extract events with fallback for date and status
     const events = (tracking.events || []).map(event => ({
       date: event.occurrenceDatetime || event.datetime || '',
-      status: event.status || '',
+      status: event.status || event.statusMilestone || 'No status',
+      location: event.location || 'Unknown location',
     }));
 
     return res.status(200).json({
@@ -69,5 +79,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
-
 
