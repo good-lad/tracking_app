@@ -44,18 +44,28 @@ export default async function handler(req, res) {
 
     const tracking = data.data.trackings[0];
 
+    // Extract tracking number
     const trackingNumber =
       (tracking.tracker && tracking.tracker.trackingNumber) ||
       (tracking.shipment && tracking.shipment.trackingNumbers && tracking.shipment.trackingNumbers[0]?.tn) ||
       'N/A';
 
-    const courier =
-      (Array.isArray(tracking.shipment?.courierCode) && tracking.shipment.courierCode.length > 0
-        ? tracking.shipment.courierCode.join(', ')
-        : tracking.shipment?.courierName ||
-          tracking.shipment?.carrierName ||
-          'N/A');
+    // Extract courier code from shipment or fallback to first event courierCode
+    let courierCodeArray = tracking.shipment?.courierCode || [];
+    let courierCode = courierCodeArray.length > 0 ? courierCodeArray.join(', ') : null;
 
+    if (!courierCode && tracking.events && tracking.events.length > 0) {
+      courierCode = tracking.events[0].courierCode || 'N/A';
+    }
+
+    // Optional: Map courier code to friendly name (add more as needed)
+    const courierNameMap = {
+      'at-post': 'Austrian Post',
+      // add other mappings here
+    };
+    const courier = courierNameMap[courierCode] || courierCode || 'N/A';
+
+    // Extract events with improved location fallback
     const events = (tracking.events || []).map(event => {
       let location = 'Location not specified';
       if (event.location) {
