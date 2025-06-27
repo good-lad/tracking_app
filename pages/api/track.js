@@ -1,5 +1,3 @@
-// pages/api/track.js
-
 const SHIP24_API_KEY = process.env.SHIP24_API_KEY && process.env.SHIP24_API_KEY.trim();
 
 function isParcelOneTrackingNumber(number) {
@@ -38,22 +36,28 @@ async function trackWithShip24(trackingNumber) {
 
   const tracking = data.data.trackings[0];
 
-  // Extract courier code or fallback to first event courierCode
+  // Extract courier code array
   let courierCodeArray = tracking.shipment?.courierCode || [];
-  let courierCode = courierCodeArray.length > 0 ? courierCodeArray.join(', ') : null;
 
-  if (!courierCode && tracking.events && tracking.events.length > 0) {
-    courierCode = tracking.events[0].courierCode || 'N/A';
+  // Fallback: if shipment courierCode empty, try first event courierCode
+  if (courierCodeArray.length === 0 && tracking.events && tracking.events.length > 0) {
+    courierCodeArray = [tracking.events[0].courierCode || ''];
   }
 
-  // Map courier code to friendly name (add more as needed)
+  // Map courier code to friendly name
   const courierNameMap = {
     'at-post': 'Austrian Post',
-    // add other mappings here if you want
+    'parcel-one': 'PARCEL.ONE',
+    // add more mappings here if needed
   };
-  let courier = courierNameMap[courierCode] || courierCode || 'N/A';
 
-  // Override courier name if it's a PARCEL.ONE tracking number
+  // Determine courier code string (comma separated if multiple)
+  const courierCodeStr = courierCodeArray.filter(Boolean).join(', ') || 'N/A';
+
+  // Determine courier display name
+  let courier = courierNameMap[courierCodeStr] || courierCodeStr;
+
+  // Override courier if tracking number matches PARCEL.ONE pattern
   if (isParcelOneTrackingNumber(trackingNumber)) {
     courier = 'PARCEL.ONE';
   }
@@ -104,4 +108,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
-
