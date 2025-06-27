@@ -50,67 +50,93 @@ export default function Home() {
   };
 
   return (
-    <main className="container mx-auto p-4 max-w-3xl">
-      <h1 className="text-3xl font-bold mb-6">Package Tracker</h1>
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
+      <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg p-8">
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">
+          Track Your Package
+        </h1>
 
-      <form onSubmit={handleSubmit} className="mb-8 flex gap-2">
-        <input
-          type="text"
-          value={trackingNumber}
-          onChange={(e) => setTrackingNumber(e.target.value)}
-          placeholder="Enter tracking number"
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Track'}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="flex mb-8">
+          <input
+            type="text"
+            value={trackingNumber}
+            onChange={(e) => setTrackingNumber(e.target.value)}
+            placeholder="Enter tracking number"
+            className="flex-grow border border-gray-300 rounded-l-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-600 text-white px-6 py-3 rounded-r-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {loading ? 'Tracking...' : 'Track'}
+          </button>
+        </form>
 
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-
-      {trackingData && (
-        <section>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Tracking Number</h3>
-              <p className="text-lg font-semibold">{trackingData.trackingNumber}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Courier</h3>
-              <p className="text-lg font-semibold">{trackingData.courier}</p>
-            </div>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{error}</span>
           </div>
+        )}
 
-          <h3 className="text-xl font-semibold mb-4">Tracking History</h3>
+        {trackingData && (
+          <section>
+            <div className="mb-8 grid grid-cols-2 gap-6 text-center sm:text-left">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                  Tracking Number
+                </h2>
+                <p className="mt-1 text-xl font-mono text-gray-900 break-all">
+                  {trackingData.trackingNumber}
+                </p>
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                  Courier
+                </h2>
+                <p className="mt-1 text-xl font-semibold text-gray-700">{trackingData.courier}</p>
+              </div>
+            </div>
 
-          {trackingData.events.length === 0 ? (
-            <p>No tracking events found.</p>
-          ) : (
-            <ul className="space-y-4">
-              {trackingData.events.map((event, idx) => (
-                <li key={idx} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
-                    {idx < trackingData.events.length - 1 && (
-                      <div className="w-0.5 h-full bg-gray-300"></div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium">{event.status}</p>
-                    <p className="text-gray-500 text-sm">
-                      {new Date(event.date).toLocaleString()} • {event.location}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+            <h3 className="text-2xl font-semibold mb-6 border-b border-gray-200 pb-2">
+              Tracking History
+            </h3>
+
+            {trackingData.events.length === 0 ? (
+              <p className="text-gray-600">No tracking events found.</p>
+            ) : (
+              <ol className="relative border-l border-gray-300 ml-4">
+                {trackingData.events.map((event, idx) => (
+                  <li key={idx} className="mb-10 ml-6">
+                    <span className="absolute -left-3 flex items-center justify-center w-6 h-6 bg-blue-600 rounded-full ring-8 ring-white">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M6 10l3 3 6-6" />
+                      </svg>
+                    </span>
+                    <time className="mb-1 text-sm font-normal leading-none text-gray-500">
+                      {new Date(event.date).toLocaleString(undefined, {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </time>
+                    <h4 className="text-lg font-semibold text-gray-900">{event.status}</h4>
+                    <p className="text-gray-600">{event.location}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        )}
+      </div>
     </main>
   );
 }
