@@ -13,11 +13,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API key not configured' });
   }
 
-  // Trim whitespace/newlines from the API key to avoid hidden characters
   apiKey = apiKey.trim();
-
-  // Debug: Log length and prefix of API key (never log full key)
-  console.log(`Loaded API key with length ${apiKey.length} and prefix "${apiKey.slice(0,5)}"`);
 
   try {
     const response = await fetch('https://api.ship24.com/public/v1/trackers/track', {
@@ -30,7 +26,6 @@ export default async function handler(req, res) {
     });
 
     const responseText = await response.text();
-
     let data;
     try {
       data = JSON.parse(responseText);
@@ -52,7 +47,23 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'No tracking data found' });
     }
 
-    return res.status(200).json(data.data.trackings[0]);
+    // Extract and format the relevant info
+    const tracking = data.data.trackings[0];
+    const trackingNumber = tracking.tracker?.trackingNumber || 'N/A';
+    const courier = Array.isArray(tracking.shipment?.courierCode) && tracking.shipment.courierCode.length > 0
+      ? tracking.shipment.courierCode.join(', ')
+      : 'N/A';
+    const events = (tracking.events || []).map(event => ({
+      date: event.occurrenceDatetime || event.datetime || '',
+      status: event.status || '',
+    }));
+
+    return res.status(200).json({
+      trackingNumber,
+      courier,
+      events,
+    });
+
   } catch (error) {
     console.error('Unexpected error:', error);
     return res.status(500).json({ error: 'Internal server error' });
